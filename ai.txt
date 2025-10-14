@@ -1,3 +1,4 @@
+---------1---------
 Write a simple cpp "Hello World" program.
 
 Here's a simple C++ "Hello World" program:``` cpp
@@ -17,7 +18,7 @@ Uses std::endl to add a newline and flush the output buffer
 Returns 0 to indicate successful program execution
 
 
-
+---------2---------
 Please create CMakeLists.txt that will be able to compile that minimal program.
 
 cmake_minimum_required(VERSION 3.10)
@@ -28,3 +29,122 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(HelloWorld main.cpp)
+
+
+---------3---------
+Create file math_operations.h and math_operations.cpp that contains int add(int a, int b); function
+
+I'll create the header and implementation files for the math operations.
+
+#ifndef MATH_OPERATIONS_H
+#define MATH_OPERATIONS_H
+
+int add(int a, int b);
+
+#endif // MATH_OPERATIONS_H
+
+
+#include "math_operations.h"
+
+int add(int a, int b) {
+    return a + b;
+}
+
+These files provide:
+math_operations.h: Header file with the function declaration and include guards to prevent multiple inclusions
+math_operations.cpp: Implementation file with the actual add function that returns the sum of two integers
+
+Don't forget to update your CMakeLists.txt to include the new source file:
+
+cmake_minimum_required(VERSION 3.10)
+
+project(HelloWorld)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_executable(HelloWorld main.cpp math_operations.cpp)
+
+
+Create file unit_tests.cpp in folder tests and configure CMakeLists.txt. And create instructions to create test executable using Google Test
+
+#include <gtest/gtest.h>
+#include "../math_operations.h"
+
+TEST(MathOperationsTest, AddPositiveNumbers) {
+    EXPECT_EQ(add(2, 3), 5);
+    EXPECT_EQ(add(10, 20), 30);
+}
+
+TEST(MathOperationsTest, AddNegativeNumbers) {
+    EXPECT_EQ(add(-5, -3), -8);
+    EXPECT_EQ(add(-10, -20), -30);
+}
+
+TEST(MathOperationsTest, AddMixedNumbers) {
+    EXPECT_EQ(add(-1, 1), 0);
+    EXPECT_EQ(add(5, -3), 2);
+    EXPECT_EQ(add(-5, 3), -2);
+}
+
+TEST(MathOperationsTest, AddZero) {
+    EXPECT_EQ(add(0, 0), 0);
+    EXPECT_EQ(add(5, 0), 5);
+    EXPECT_EQ(add(0, -5), -5);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+
+
+cmake_minimum_required(VERSION 3.14)
+
+project(HelloWorld)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Main executable
+add_executable(HelloWorld main.cpp math_operations.cpp)
+
+# Google Test setup
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG release-1.12.1
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+# Enable testing
+enable_testing()
+
+# Test executable
+add_executable(RunTests tests/unit_tests.cpp math_operations.cpp)
+target_link_libraries(RunTests gtest gtest_main)
+
+# Add test
+add_test(NAME UnitTests COMMAND RunTests)
+
+nstructions to Build and Run Tests with Google Test
+Step 1: Configure and Build
+
+# From project root directory
+mkdir -p build
+cd build
+cmake ..
+cmake --build .
+
+Step 2: Run Tests
+Run test executable directly
+./RunTests
+
+Features:
+Google Test integration: Uses FetchContent to automatically download and configure Google Test
+Multiple test cases: Tests cover positive, negative, mixed numbers, and zero
+CTest support: Can run tests using CMake's testing framework
+Cross-platform: Works on Windows, Linux, and macOS
