@@ -15,3 +15,16 @@ Defines the main() function, which is the entry point of every C++ program
 Uses std::cout to print "Hello World" to the console
 Uses std::endl to add a newline and flush the output buffer
 Returns 0 to indicate successful program execution
+
+
+
+Please create CMakeLists.txt that will be able to compile that minimal program.
+
+cmake_minimum_required(VERSION 3.10)
+
+project(HelloWorld)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_executable(HelloWorld main.cpp)
