@@ -25,7 +25,7 @@ jobs:
             artifact_name: HelloWorld-Linux
             executable_path: build/HelloWorld
           - os: windows-latest
-            script: ci.bat
+            script: cmd /c ci.bat
             artifact_name: HelloWorld-Windows
             executable_path: build/Release/HelloWorld.exe
           - os: macos-latest

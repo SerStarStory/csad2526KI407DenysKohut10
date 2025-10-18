@@ -374,3 +374,16 @@ jobs:
     - `HelloWorld-macOS` (macOS build)
 
 The workflow uses `fail-fast: false` so if one platform fails, the others continue building. You can download the artifacts from the Actions tab after each run.
+
+
+Run ci.bat
+ci.bat: D:\a\_temp\e56d1f13-58fd-40f3-96bc-8de8a9650345.ps1:2
+Line |
+   2 |  ci.bat
+     |  ~~~~~~
+     | The term 'ci.bat' is not recognized as a name of a cmdlet, function, script file, or executable program. Check
+     | the spelling of the name, or if a path was included, verify that the path is correct and try again.
+Error: Process completed with exit code 1.
+
+The issue is that GitHub Actions on Windows uses PowerShell by default, which doesn't recognize .bat files without the full path or cmd /c prefix.
+Change the Windows script from ci.bat to cmd /c ci.bat to explicitly run it through Command Prompt instead of PowerShell
