@@ -387,3 +387,107 @@ Error: Process completed with exit code 1.
 
 The issue is that GitHub Actions on Windows uses PowerShell by default, which doesn't recognize .bat files without the full path or cmd /c prefix.
 Change the Windows script from ci.bat to cmd /c ci.bat to explicitly run it through Command Prompt instead of PowerShell
+
+Run cmd /c ci.bat
+
+Starting CI Build Process...
+[Step 1/4] Creating build folder...
+Build folder created successfully.
+[Step 2/4] Configuring project with CMake...
+-- Building for: NMake Makefiles
+-- The C compiler identification is unknown
+-- The CXX compiler identification is unknown
+CMake Error at CMakeLists.txt:3 (project):
+  The CMAKE_C_COMPILER:
+    cl
+  is not a full path and was not found in the PATH.
+  To use the NMake generator with Visual C++, cmake must be run from a shell
+  that can use the compiler cl from the command line.  This environment is
+  unable to invoke the cl compiler.  To fix this problem, run cmake from the
+  Visual Studio Command Prompt (vcvarsall.bat).
+  Tell CMake where to find the compiler by setting either the environment
+  variable "CC" or the CMake cache entry CMAKE_C_COMPILER to the full path to
+  the compiler, or to the compiler name if it is in the PATH.
+CMake Error at CMakeLists.txt:3 (project):
+  The CMAKE_CXX_COMPILER:
+    cl
+  is not a full path and was not found in the PATH.
+  To use the NMake generator with Visual C++, cmake must be run from a shell
+  that can use the compiler cl from the command line.  This environment is
+  unable to invoke the cl compiler.  To fix this problem, run cmake from the
+  Visual Studio Command Prompt (vcvarsall.bat).
+  Tell CMake where to find the compiler by setting either the environment
+  variable "CXX" or the CMake cache entry CMAKE_CXX_COMPILER to the full path
+  to the compiler, or to the compiler name if it is in the PATH.
+
+The issue is that CMake is trying to use the NMake generator but can't find the Visual Studio compiler. We need to tell CMake to use a different generator on Windows. Let me update the workflow to use the Visual Studio generator or ensure the build environment is set up properly:
+```yml
+
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-Linux
+            executable_path: build/HelloWorld
+          - os: windows-latest
+            script: cmd /c ci.bat
+            artifact_name: HelloWorld-Windows
+            executable_path: build/Release/HelloWorld.exe
+          - os: macos-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-macOS
+            executable_path: build/HelloWorld
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC (Windows only)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.14'
+
+      - name: Verify CMake installation
+        run: cmake --version
+
+      - name: Make script executable (Unix only)
+        if: runner.os != 'Windows'
+        run: chmod +x ci.sh
+
+      - name: Run build script
+        run: ${{ matrix.script }}
+
+      - name: Deploy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.executable_path }}
+          if-no-files-found: error
+```
+Added Setup MSVC (Windows only) step using ilammy/msvc-dev-cmd@v1 action
+This action sets up the Microsoft Visual C++ development environment, making the cl compiler available in the PATH
+This step only runs on Windows (using if: runner.os == 'Windows')
