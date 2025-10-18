@@ -491,3 +491,87 @@ jobs:
 Added Setup MSVC (Windows only) step using ilammy/msvc-dev-cmd@v1 action
 This action sets up the Microsoft Visual C++ development environment, making the cl compiler available in the PATH
 This step only runs on Windows (using if: runner.os == 'Windows')
+
+Run actions/upload-artifact@v4
+Error: No files were found with the provided path: build/Release/HelloWorld.exe. No artifacts will be uploaded.
+
+The issue is that with NMake Makefiles generator (single-configuration), the executable is placed directly in `build/` rather than `build/Release/`. Let me update the workflow to handle both cases by checking for the executable in multiple locations:
+```yml
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: HelloWorld-Linux
+          - os: windows-latest
+            artifact_name: HelloWorld-Windows
+          - os: macos-latest
+            artifact_name: HelloWorld-macOS
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC (Windows only)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.14'
+
+      - name: Verify CMake installation
+        run: cmake --version
+
+      - name: Make script executable (Unix only)
+        if: runner.os != 'Windows'
+        run: chmod +x ci.sh
+
+      - name: Run build script (Windows)
+        if: runner.os == 'Windows'
+        run: cmd /c ci.bat
+
+      - name: Run build script (Unix)
+        if: runner.os != 'Windows'
+        run: ./ci.sh
+
+      - name: Deploy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            build/HelloWorld
+            build/HelloWorld.exe
+            build/Release/HelloWorld.exe
+            build/Debug/HelloWorld.exe
+          if-no-files-found: error
+```
+**Key changes:**
+1. Simplified the matrix by removing the `include` section with script paths
+2. Split the "Run build script" step into two separate steps - one for Windows and one for Unix
+3. Updated the artifact path to include multiple possible locations:
+    - `build/HelloWorld` (Unix single-config)
+    - `build/HelloWorld.exe` (Windows single-config like NMake)
+    - `build/Release/HelloWorld.exe` (Windows multi-config Release)
+    - `build/Debug/HelloWorld.exe` (Windows multi-config Debug)
+
+The `actions/upload-artifact@v4` will upload whichever file(s) it finds from the list, so it will work regardless of which generator CMake uses on Windows.
