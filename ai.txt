@@ -284,3 +284,93 @@ Make it executable: chmod +x ci.sh
 Run it: ./ci.sh
 
 The script will automatically stop if any step fails due to the `set -e` flag.
+
+
+---------5---------
+Okay. Now you need to create GitHub workflows file name ci.yml. It must trigger where it is a push or pull request to branches develop or main. create one job with matrix strategy. Rub build on ubuntu, windows, macOS using early created ci.bat and ci.sh files. Moreover, every build mush has the following steps: actions/checkout@v4, install cmake if needed, start building, deploy
+
+I'll create a GitHub Actions workflow file that triggers on push/pull requests to develop or main branches, with a matrix strategy for Ubuntu, Windows, and macOS:
+```
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-Linux
+            executable_path: build/HelloWorld
+          - os: windows-latest
+            script: ci.bat
+            artifact_name: HelloWorld-Windows
+            executable_path: build/Release/HelloWorld.exe
+          - os: macos-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-macOS
+            executable_path: build/HelloWorld
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.14'
+
+      - name: Verify CMake installation
+        run: cmake --version
+
+      - name: Make script executable (Unix only)
+        if: runner.os != 'Windows'
+        run: chmod +x ci.sh
+
+      - name: Run build script
+        run: ${{ matrix.script }}
+
+      - name: Deploy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.executable_path }}
+          if-no-files-found: error
+```
+
+**This workflow includes:**
+1. **Triggers**: On push or pull request to `develop` or `main` branches
+2. **Matrix Strategy**: Builds on three platforms:
+    - Ubuntu (latest)
+    - Windows (latest)
+    - macOS (latest)
+
+3. **Steps for each build**:
+    - **Checkout**: Uses `actions/checkout@v4` to get the code
+    - **Install CMake**: Uses `jwlawson/actions-setup-cmake@v2` to ensure CMake 3.14+ is available
+    - **Verify CMake**: Checks the installed version
+    - **Make executable**: Makes `ci.sh` executable on Unix systems (Linux/macOS)
+    - **Build**: Runs the appropriate script ( for Windows, `ci.sh` for Unix/macOS) `ci.bat`
+    - **Deploy**: Uploads the built executable as an artifact with platform-specific naming
+
+4. **Artifacts**: Each platform uploads its executable:
+    - `HelloWorld-Linux` (Ubuntu build)
+    - `HelloWorld-Windows` (Windows build)
+    - `HelloWorld-macOS` (macOS build)
+
+The workflow uses `fail-fast: false` so if one platform fails, the others continue building. You can download the artifacts from the Actions tab after each run.

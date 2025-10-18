@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-Linux
+            executable_path: build/HelloWorld
+          - os: windows-latest
+            script: ci.bat
+            artifact_name: HelloWorld-Windows
+            executable_path: build/Release/HelloWorld.exe
+          - os: macos-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-macOS
+            executable_path: build/HelloWorld
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.14'
+
+      - name: Verify CMake installation
+        run: cmake --version
+
+      - name: Make script executable (Unix only)
+        if: runner.os != 'Windows'
+        run: chmod +x ci.sh
+
+      - name: Run build script
+        run: ${{ matrix.script }}
+
+      - name: Deploy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.executable_path }}
+          if-no-files-found: error
