@@ -1,0 +1,577 @@
+---------1---------
+Write a simple cpp "Hello World" program.
+
+Here's a simple C++ "Hello World" program:``` cpp
+#include <iostream>
+
+int main() {
+    std::cout << "Hello World" << std::endl;
+    return 0;
+}
+```
+
+This program:
+Includes the iostream library for input/output operations
+Defines the main() function, which is the entry point of every C++ program
+Uses std::cout to print "Hello World" to the console
+Uses std::endl to add a newline and flush the output buffer
+Returns 0 to indicate successful program execution
+
+
+---------2---------
+Please create CMakeLists.txt that will be able to compile that minimal program.
+
+cmake_minimum_required(VERSION 3.10)
+
+project(HelloWorld)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_executable(HelloWorld main.cpp)
+
+
+---------3---------
+Create file math_operations.h and math_operations.cpp that contains int add(int a, int b); function
+
+I'll create the header and implementation files for the math operations.
+
+#ifndef MATH_OPERATIONS_H
+#define MATH_OPERATIONS_H
+
+int add(int a, int b);
+
+#endif // MATH_OPERATIONS_H
+
+
+#include "math_operations.h"
+
+int add(int a, int b) {
+    return a + b;
+}
+
+These files provide:
+math_operations.h: Header file with the function declaration and include guards to prevent multiple inclusions
+math_operations.cpp: Implementation file with the actual add function that returns the sum of two integers
+
+Don't forget to update your CMakeLists.txt to include the new source file:
+
+cmake_minimum_required(VERSION 3.10)
+
+project(HelloWorld)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_executable(HelloWorld main.cpp math_operations.cpp)
+
+
+Create file unit_tests.cpp in folder tests and configure CMakeLists.txt. And create instructions to create test executable using Google Test
+
+#include <gtest/gtest.h>
+#include "../math_operations.h"
+
+TEST(MathOperationsTest, AddPositiveNumbers) {
+    EXPECT_EQ(add(2, 3), 5);
+    EXPECT_EQ(add(10, 20), 30);
+}
+
+TEST(MathOperationsTest, AddNegativeNumbers) {
+    EXPECT_EQ(add(-5, -3), -8);
+    EXPECT_EQ(add(-10, -20), -30);
+}
+
+TEST(MathOperationsTest, AddMixedNumbers) {
+    EXPECT_EQ(add(-1, 1), 0);
+    EXPECT_EQ(add(5, -3), 2);
+    EXPECT_EQ(add(-5, 3), -2);
+}
+
+TEST(MathOperationsTest, AddZero) {
+    EXPECT_EQ(add(0, 0), 0);
+    EXPECT_EQ(add(5, 0), 5);
+    EXPECT_EQ(add(0, -5), -5);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+
+
+cmake_minimum_required(VERSION 3.14)
+
+project(HelloWorld)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Main executable
+add_executable(HelloWorld main.cpp math_operations.cpp)
+
+# Google Test setup
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG release-1.12.1
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+# Enable testing
+enable_testing()
+
+# Test executable
+add_executable(RunTests tests/unit_tests.cpp math_operations.cpp)
+target_link_libraries(RunTests gtest gtest_main)
+
+# Add test
+add_test(NAME UnitTests COMMAND RunTests)
+
+nstructions to Build and Run Tests with Google Test
+Step 1: Configure and Build
+
+# From project root directory
+mkdir -p build
+cd build
+cmake ..
+cmake --build .
+
+Step 2: Run Tests
+Run test executable directly
+./RunTests
+
+Features:
+Google Test integration: Uses FetchContent to automatically download and configure Google Test
+Multiple test cases: Tests cover positive, negative, mixed numbers, and zero
+CTest support: Can run tests using CMake's testing framework
+Cross-platform: Works on Windows, Linux, and macOS
+
+
+---------4---------
+Create a ci.bat file which create new build folder. Perform cmake --build . And have a step to run tests using ctest
+
+I'll create a `ci.bat` file that creates a new build folder, runs cmake build, and executes tests using ctest.
+
+@echo off
+echo Starting CI Build Process...
+echo.
+
+REM Step 1: Remove old build folder if it exists and create a new one
+echo [Step 1/4] Creating build folder...
+if exist build rmdir /s /q build
+mkdir build
+if %errorlevel% neq 0 (
+    echo ERROR: Failed to create build folder
+    exit /b %errorlevel%
+)
+echo Build folder created successfully.
+echo.
+
+REM Step 2: Configure project with CMake
+echo [Step 2/4] Configuring project with CMake...
+cd build
+cmake ..
+if %errorlevel% neq 0 (
+    echo ERROR: CMake configuration failed
+    cd ..
+    exit /b %errorlevel%
+)
+echo CMake configuration completed successfully.
+echo.
+
+REM Step 3: Build project
+echo [Step 3/4] Building project...
+cmake --build . --config Release
+if %errorlevel% neq 0 (
+    echo ERROR: Build failed
+    cd ..
+    exit /b %errorlevel%
+)
+echo Build completed successfully.
+echo.
+
+REM Step 4: Run tests with CTest
+echo [Step 4/4] Running tests with CTest...
+ctest -C Release --output-on-failure
+if %errorlevel% neq 0 (
+    echo ERROR: Tests failed
+    cd ..
+    exit /b %errorlevel%
+)
+echo.
+echo Tests completed successfully.
+echo.
+
+cd ..
+echo ========================================
+echo CI Build Process Completed Successfully!
+echo ========================================
+exit /b 0
+
+This batch file:
+1. **Creates a new build folder**: Removes any existing `build` folder and creates a fresh one
+2. **Configures with CMake**: Runs `cmake ..` to configure the project
+3. **Builds the project**: Executes `cmake --build .` to compile everything
+4. **Runs tests**: Uses `ctest --output-on-failure` to run all tests and show output only if tests fail
+
+**Features:**
+- Error checking after each step with appropriate exit codes
+- Clear progress messages for each step
+- Automatic cleanup of old build artifacts
+- Returns to the project root directory after completion
+- The `--output-on-failure` flag ensures you see test output when tests fail
+
+**Usage:** Simply run from the project root directory:
+ci.bat
+
+okey now create another one for unix/macos
+
+#!/bin/bash
+
+set -e  # Exit on error
+
+echo "Starting CI Build Process..."
+echo ""
+
+# Step 1: Remove old build folder if it exists and create a new one
+echo "[Step 1/4] Creating build folder..."
+if [ -d "build" ]; then
+    rm -rf build
+fi
+mkdir build
+echo "Build folder created successfully."
+echo ""
+
+# Step 2: Configure project with CMake
+echo "[Step 2/4] Configuring project with CMake..."
+cd build
+cmake ..
+echo "CMake configuration completed successfully."
+echo ""
+
+# Step 3: Build project
+echo "[Step 3/4] Building project..."
+cmake --build . --config Release
+echo "Build completed successfully."
+echo ""
+
+# Step 4: Run tests with CTest
+echo "[Step 4/4] Running tests with CTest..."
+ctest -C Release --output-on-failure
+echo ""
+echo "Tests completed successfully."
+echo ""
+
+cd ..
+echo "========================================"
+echo "CI Build Process Completed Successfully!"
+echo "========================================"
+exit 0
+
+
+Key differences from the Windows version:
+Uses #!/bin/bash shebang
+Uses set -e to exit on any error (instead of checking %errorlevel%)
+Uses to check if directory exists
+Uses rm -rf instead of rmdir /s /q
+No need for -C Release flag on Unix/macOS (single-configuration generators like Makefile or Ninja are typically used)
+
+To use the script:
+Make it executable: chmod +x ci.sh
+Run it: ./ci.sh
+
+The script will automatically stop if any step fails due to the `set -e` flag.
+
+
+---------5---------
+Okay. Now you need to create GitHub workflows file name ci.yml. It must trigger where it is a push or pull request to branches develop or main. create one job with matrix strategy. Rub build on ubuntu, windows, macOS using early created ci.bat and ci.sh files. Moreover, every build mush has the following steps: actions/checkout@v4, install cmake if needed, start building, deploy
+
+I'll create a GitHub Actions workflow file that triggers on push/pull requests to develop or main branches, with a matrix strategy for Ubuntu, Windows, and macOS:
+```
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-Linux
+            executable_path: build/HelloWorld
+          - os: windows-latest
+            script: ci.bat
+            artifact_name: HelloWorld-Windows
+            executable_path: build/Release/HelloWorld.exe
+          - os: macos-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-macOS
+            executable_path: build/HelloWorld
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.14'
+
+      - name: Verify CMake installation
+        run: cmake --version
+
+      - name: Make script executable (Unix only)
+        if: runner.os != 'Windows'
+        run: chmod +x ci.sh
+
+      - name: Run build script
+        run: ${{ matrix.script }}
+
+      - name: Deploy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.executable_path }}
+          if-no-files-found: error
+```
+
+**This workflow includes:**
+1. **Triggers**: On push or pull request to `develop` or `main` branches
+2. **Matrix Strategy**: Builds on three platforms:
+    - Ubuntu (latest)
+    - Windows (latest)
+    - macOS (latest)
+
+3. **Steps for each build**:
+    - **Checkout**: Uses `actions/checkout@v4` to get the code
+    - **Install CMake**: Uses `jwlawson/actions-setup-cmake@v2` to ensure CMake 3.14+ is available
+    - **Verify CMake**: Checks the installed version
+    - **Make executable**: Makes `ci.sh` executable on Unix systems (Linux/macOS)
+    - **Build**: Runs the appropriate script ( for Windows, `ci.sh` for Unix/macOS) `ci.bat`
+    - **Deploy**: Uploads the built executable as an artifact with platform-specific naming
+
+4. **Artifacts**: Each platform uploads its executable:
+    - `HelloWorld-Linux` (Ubuntu build)
+    - `HelloWorld-Windows` (Windows build)
+    - `HelloWorld-macOS` (macOS build)
+
+The workflow uses `fail-fast: false` so if one platform fails, the others continue building. You can download the artifacts from the Actions tab after each run.
+
+
+Run ci.bat
+ci.bat: D:\a\_temp\e56d1f13-58fd-40f3-96bc-8de8a9650345.ps1:2
+Line |
+   2 |  ci.bat
+     |  ~~~~~~
+     | The term 'ci.bat' is not recognized as a name of a cmdlet, function, script file, or executable program. Check
+     | the spelling of the name, or if a path was included, verify that the path is correct and try again.
+Error: Process completed with exit code 1.
+
+The issue is that GitHub Actions on Windows uses PowerShell by default, which doesn't recognize .bat files without the full path or cmd /c prefix.
+Change the Windows script from ci.bat to cmd /c ci.bat to explicitly run it through Command Prompt instead of PowerShell
+
+Run cmd /c ci.bat
+
+Starting CI Build Process...
+[Step 1/4] Creating build folder...
+Build folder created successfully.
+[Step 2/4] Configuring project with CMake...
+-- Building for: NMake Makefiles
+-- The C compiler identification is unknown
+-- The CXX compiler identification is unknown
+CMake Error at CMakeLists.txt:3 (project):
+  The CMAKE_C_COMPILER:
+    cl
+  is not a full path and was not found in the PATH.
+  To use the NMake generator with Visual C++, cmake must be run from a shell
+  that can use the compiler cl from the command line.  This environment is
+  unable to invoke the cl compiler.  To fix this problem, run cmake from the
+  Visual Studio Command Prompt (vcvarsall.bat).
+  Tell CMake where to find the compiler by setting either the environment
+  variable "CC" or the CMake cache entry CMAKE_C_COMPILER to the full path to
+  the compiler, or to the compiler name if it is in the PATH.
+CMake Error at CMakeLists.txt:3 (project):
+  The CMAKE_CXX_COMPILER:
+    cl
+  is not a full path and was not found in the PATH.
+  To use the NMake generator with Visual C++, cmake must be run from a shell
+  that can use the compiler cl from the command line.  This environment is
+  unable to invoke the cl compiler.  To fix this problem, run cmake from the
+  Visual Studio Command Prompt (vcvarsall.bat).
+  Tell CMake where to find the compiler by setting either the environment
+  variable "CXX" or the CMake cache entry CMAKE_CXX_COMPILER to the full path
+  to the compiler, or to the compiler name if it is in the PATH.
+
+The issue is that CMake is trying to use the NMake generator but can't find the Visual Studio compiler. We need to tell CMake to use a different generator on Windows. Let me update the workflow to use the Visual Studio generator or ensure the build environment is set up properly:
+```yml
+
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-Linux
+            executable_path: build/HelloWorld
+          - os: windows-latest
+            script: cmd /c ci.bat
+            artifact_name: HelloWorld-Windows
+            executable_path: build/Release/HelloWorld.exe
+          - os: macos-latest
+            script: ./ci.sh
+            artifact_name: HelloWorld-macOS
+            executable_path: build/HelloWorld
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC (Windows only)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.14'
+
+      - name: Verify CMake installation
+        run: cmake --version
+
+      - name: Make script executable (Unix only)
+        if: runner.os != 'Windows'
+        run: chmod +x ci.sh
+
+      - name: Run build script
+        run: ${{ matrix.script }}
+
+      - name: Deploy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.executable_path }}
+          if-no-files-found: error
+```
+Added Setup MSVC (Windows only) step using ilammy/msvc-dev-cmd@v1 action
+This action sets up the Microsoft Visual C++ development environment, making the cl compiler available in the PATH
+This step only runs on Windows (using if: runner.os == 'Windows')
+
+Run actions/upload-artifact@v4
+Error: No files were found with the provided path: build/Release/HelloWorld.exe. No artifacts will be uploaded.
+
+The issue is that with NMake Makefiles generator (single-configuration), the executable is placed directly in `build/` rather than `build/Release/`. Let me update the workflow to handle both cases by checking for the executable in multiple locations:
+```yml
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: HelloWorld-Linux
+          - os: windows-latest
+            artifact_name: HelloWorld-Windows
+          - os: macos-latest
+            artifact_name: HelloWorld-macOS
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC (Windows only)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.14'
+
+      - name: Verify CMake installation
+        run: cmake --version
+
+      - name: Make script executable (Unix only)
+        if: runner.os != 'Windows'
+        run: chmod +x ci.sh
+
+      - name: Run build script (Windows)
+        if: runner.os == 'Windows'
+        run: cmd /c ci.bat
+
+      - name: Run build script (Unix)
+        if: runner.os != 'Windows'
+        run: ./ci.sh
+
+      - name: Deploy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            build/HelloWorld
+            build/HelloWorld.exe
+            build/Release/HelloWorld.exe
+            build/Debug/HelloWorld.exe
+          if-no-files-found: error
+```
+**Key changes:**
+1. Simplified the matrix by removing the `include` section with script paths
+2. Split the "Run build script" step into two separate steps - one for Windows and one for Unix
+3. Updated the artifact path to include multiple possible locations:
+    - `build/HelloWorld` (Unix single-config)
+    - `build/HelloWorld.exe` (Windows single-config like NMake)
+    - `build/Release/HelloWorld.exe` (Windows multi-config Release)
+    - `build/Debug/HelloWorld.exe` (Windows multi-config Debug)
+
+The `actions/upload-artifact@v4` will upload whichever file(s) it finds from the list, so it will work regardless of which generator CMake uses on Windows.
